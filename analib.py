@@ -9,7 +9,8 @@
 #import os
 #import subprocess
 #import sys
-import uproot, json
+import uproot
+import json
 import numpy as np
 #import awkward
 import matplotlib.pyplot as plt

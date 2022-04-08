@@ -8,7 +8,8 @@ import sys
 import os
 import pickle
 import numpy as np
-from htoaaRootFilesLoc import TTJetsPaths, WJetsPaths, bEnrPaths, BGenPaths, ZJetsPaths, ParkedDataPaths, JetHTPaths, ggHPaths
+from htoaaRootFilesLoc import  WJetsPaths,  ZJetsPaths
+from DMFuncs import *
 
 BGenWeight = [1, 0.259, 0.0515, 0.01666, 0.00905, 0.003594, 0.001401]
 bEnrWeight =[ 1, 0.33, 0.034, 0.034, 0.024, 0.0024, 0.00044]
@@ -17,12 +18,8 @@ WJetsWeight = [315600. / 10071273, 68570./ 15298056, 34900. / 14627242]
 TJetsWeight = [831760.0 / 10244307]
 ParkedDataWeight = [7.1055]
 
-BGenDict = dict(zip(BGenPaths, BGenWeight))
-bEnrDict = dict(zip(bEnrPaths, bEnrWeight))
 ZJetsDict = dict(zip(ZJetsPaths, ZJetsWeight))
 WJetsDict = dict(zip(WJetsPaths, WJetsWeight))
-TTJetsDict = dict(zip(TTJetsPaths, TJetsWeight))
-ParkedDataDict = dict(zip(ParkedDataPaths, ParkedDataWeight))
 
 ## this is to choose which variable sets to use
 ## 'b' = baselien
@@ -129,53 +126,53 @@ tagslist = ['bEnr', 'BGen', 'data', 'JetHT', 'WJets', 'TTJets', 'ZJets', 'ggH']
 ## returns dataframe containing maxpt jet/muon and corresponding variable
 ## takes 1) PhysObj to be extracted from, 2) column of maxPt, 3) list of vars
 ## in the PhysObj (will also become column names)
-def getMaxPt(physobj, col, varlist):
-    varlistcopy = varlist
-    if 'FatJet_nSV' in varlist:
-        varlistcopy.remove('FatJet_nSV')
-    colidx = physobj[col].idxmax(axis=1).to_numpy()
-    rowidx = list(range(len(colidx)))
-    maxPtData = pd.DataFrame()
-
-    for var in varlistcopy:
-        npArr = physobj[var].to_numpy()
-        maxPtData[var] = npArr[rowidx, colidx]
-    return maxPtData
+# def getMaxPt(physobj, col, varlist):
+#     varlistcopy = varlist
+#     if 'FatJet_nSV' in varlist:
+#         varlistcopy.remove('FatJet_nSV')
+#     colidx = physobj[col].idxmax(axis=1).to_numpy()
+#     rowidx = list(range(len(colidx)))
+#     maxPtData = pd.DataFrame()
+# 
+#     for var in varlistcopy:
+#         npArr = physobj[var].to_numpy()
+#         maxPtData[var] = npArr[rowidx, colidx]
+#     return maxPtData
 
 ## returns dataframe of subjet variable
 ## takes 1) the number associated with subjet, 2) subjet variable name as string
 ## 3) f.get('Events') from the rootfile
-def getSubJetData(subjetnum, subjetvarname, events):
-    subjetidx = events.array(f'FatJet_subJetIdx{subjetnum}')
-    subjetvar = events.array(subjetvarname)
-    padto = subjetvar.counts.max() + 1
-    subjetvar = subjetvar.pad(padto).fillna(0)
-
-    return pd.DataFrame(subjetvar[subjetidx])
+# def getSubJetData(subjetnum, subjetvarname, events):
+#     subjetidx = events.array(f'FatJet_subJetIdx{subjetnum}')
+#     subjetvar = events.array(subjetvarname)
+#     padto = subjetvar.counts.max() + 1
+#     subjetvar = subjetvar.pad(padto).fillna(0)
+# 
+#     return pd.DataFrame(subjetvar[subjetidx])
 
 ## returns dataframe of secondary vertex <0.8 counts
 ## takes 1) physobj of jets, 2) f.get('Events') from root
 ## takes the idx of the max pt fatjet and index idx. get eta and phi of the corresponding
 ## fatjet and SV
-def getnSVCounts(data, events):
-    eventidx = data.FatJet_pt.index
-    maxptjetidx = data['FatJet_pt'].idxmax(axis = 1).to_numpy() #same as colidx
-
-    jeteta = events.array('FatJet_eta')[eventidx, maxptjetidx]
-    jetphi = events.array('FatJet_phi')[eventidx, maxptjetidx]
-    ## sveta and svphi are arrays of values corresponding to the event
-    sveta = events.array('SV_eta')[eventidx]
-    svphi = events.array('SV_phi')[eventidx]
-
-    dr = np.sqrt(np.power(jeteta - sveta, 2) + np.power(dphi(jetphi, svphi), 2))
-    dr = pd.DataFrame(dr)
-    nSVcounts = (dr < 0.8).sum(axis=1)
-    return nSVcounts
-
-def dphi(jetphi, svphi):
-    jetphi[jetphi < 0 ] = jetphi[jetphi<0] + 2*np.pi
-    svphi[svphi < 0] = svphi[svphi<0] + 2*np.pi
-    return jetphi - svphi
+# def getnSVCounts(data, events):
+#     eventidx = data.FatJet_pt.index
+#     maxptjetidx = data['FatJet_pt'].idxmax(axis = 1).to_numpy() #same as colidx
+# 
+#     jeteta = events.array('FatJet_eta')[eventidx, maxptjetidx]
+#     jetphi = events.array('FatJet_phi')[eventidx, maxptjetidx]
+#     ## sveta and svphi are arrays of values corresponding to the event
+#     sveta = events.array('SV_eta')[eventidx]
+#     svphi = events.array('SV_phi')[eventidx]
+# 
+#     dr = np.sqrt(np.power(jeteta - sveta, 2) + np.power(dphi(jetphi, svphi), 2))
+#     dr = pd.DataFrame(dr)
+#     nSVcounts = (dr < 0.8).sum(axis=1)
+#     return nSVcounts
+# 
+# def dphi(jetphi, svphi):
+#     jetphi[jetphi < 0 ] = jetphi[jetphi<0] + 2*np.pi
+#     svphi[svphi < 0] = svphi[svphi<0] + 2*np.pi
+#     return jetphi - svphi
 
 def processData (filePath, tag, BDT):
     if tag == 'JetHT' or tag == 'data':
