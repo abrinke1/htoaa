@@ -1,0 +1,64 @@
+/afs/cern.ch/user/c/csutanta/.bashrc: line 20: bind: warning: line editing not enabled
+[?1034h[?1034h[?1034h[?1034h[?1034h[?1034h[?1034h[?1034h
+real	0m1.752s
+user	0m0.502s
+sys	0m0.169s
+
+real	0m0.136s
+user	0m0.105s
+sys	0m0.030s
+
+real	0m0.516s
+user	0m0.430s
+sys	0m0.086s
+Python 2.7.5
+
+real	0m2.967s
+user	0m1.603s
+sys	0m0.166s
+Traceback (most recent call last):
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/cachetools/__init__.py", line 66, in __getitem__
+    return self.__data[key]
+KeyError: 0
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/source/chunked.py", line 117, in data
+    chunk = self.cache[chunkindex]
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/cache.py", line 63, in __getitem__
+    return self._cache[where]
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/cachetools/__init__.py", line 209, in __getitem__
+    value = cache_getitem(self, key)
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/cachetools/__init__.py", line 68, in __getitem__
+    return self.__missing__(key)
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/cachetools/__init__.py", line 95, in __missing__
+    raise KeyError(key)
+KeyError: 0
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "dataVsMC.py", line 154, in <module>
+    main(args.fname)
+  File "dataVsMC.py", line 115, in main
+    results = DM.processData(filedir, tag='BGen', dataSet='UL', MC=True)
+  File "/afs/cern.ch/user/c/csutanta/Projects/htoaa/dataVsMC_DataManager.py", line 138, in processData
+    f = uproot.open(fileName + '.root')
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/rootio.py", line 57, in open
+    return xrootd(path, xrootdsource=xrootdsource, **options)
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/rootio.py", line 77, in xrootd
+    return ROOTDirectory.read(openfcn(path), **options)
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/rootio.py", line 122, in read
+    magic, fVersion = cursor.fields(source, ROOTDirectory._format1)
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/source/cursor.py", line 46, in fields
+    return format.unpack(source.data(start, stop))
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/source/chunked.py", line 119, in data
+    self._open()
+  File "/afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/lib/python3.8/site-packages/uproot/source/xrootd.py", line 36, in _open
+    raise OSError(status["message"])
+OSError: [FATAL] Redirect limit has been reached
+
+real	0m14.901s
+user	0m2.740s
+sys	0m0.965s
