@@ -116,8 +116,6 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     ## open file, get events
     fileName, fileExtension = os.path.splitext(filePath)
 
-    print(filePath)
-
     if fileExtension != '.root':
         print('this program only supports .root  files')
         sys.exit()
@@ -137,13 +135,7 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         sys.exit()
 
 
-    t1 = time.time()
-
-    f = uproot.open(fileName + '.root')
-
-
-    tt = time.time()
-    print('open files: ', tt-t1)
+    f = uproot.open(filePath)
 
     events = f.get('Events')
 
@@ -209,25 +201,19 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     ## make Event object
     ev = Event(jets, other, ak4Jets)
 
-    t2 = time.time()
-    print('load data: ', t2-tt)
-
     ## cutting events
     ## jet cuts
     jets.cut(jets['FatJet_pt'] > 170)
     jets.cut(jets['FatJet_eta'].abs() < 2.4)
     # jets.cut(jets['FatJet_btagDDBvLV2'] > 0.8)
     # jets.cut(jets['FatJet_btagDeepB'] > 0.4184)
-    jets.cut(jets['FatJet_msoftdrop'] > 90)
-    jets.cut(jets['FatJet_msoftdrop'] < 200)#<= 200)
-    jets.cut(jets['FatJet_mass'] > 90)
-    #jets.cut(jets['FatJet_mass'] <= 200)
+    # jets.cut(jets['FatJet_msoftdrop'] > 90)
+    # jets.cut(jets['FatJet_msoftdrop'] < 200)#<= 200)
+    # jets.cut(jets['FatJet_mass'] > 90)
+    # jets.cut(jets['FatJet_mass'] <= 200)
     other.cut(other['PV_npvsGood'] >= 1)
 
     ev.sync()
-
-    t3 = time.time()
-    print('cut data: ', t3-t2)
 
     ## muon cuts
     # muons.cut((muons['Muon_softId'] > 0.9))
@@ -259,7 +245,6 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         return pd.DataFrame()
 
     else:
-        t4 = time.time()
         ## Return only the highest pt physics objects and their related variables
         maxPtJets = getMaxPt(jets, 'FatJet_pt')
         maxPtData = maxPtJets
@@ -281,13 +266,15 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         ## LHE_weights
 
         if 'BGen'==tag:
-            key = re.search('QCD_HT(.*)_B', fileName).group(1) ##find which HT range from filename
-            maxPtData['LHE_weights'] = BGenWeights[key]
+            maxPtData = maxPtData.assign(final_weights =1 )
+            #print(fileName)
+            #key = re.search('QCD_HT(.*)_', fileName).group(1) ##find which HT range from filename
+            # maxPtData['LHE_weights'] = BGenWeights[key]
             # for i in BGenDict:
             #     if i in fileName:
             #         key = i
             #         maxPtData['LHE_weights'] = BGenDict[key]
-            maxPtData = maxPtData.assign(final_weights = maxPtData['LHE_weights'])
+            # maxPtData = maxPtData.assign(final_weights = maxPtData['LHE_weights'])
 
         elif 'TunCP5'==tag:
             for i in TunCP5Dict:
@@ -312,6 +299,4 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     #maxPtData['FatJet_nSV'] = getnSVCounts(jets, events)
     maxPtData = maxPtData.dropna(how='all')
     #maxPtData = maxPtData.fillna(0)
-    t5 = time.time()
-    print('select top pt and apply weights: ', t5-t4)
     return maxPtData

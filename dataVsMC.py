@@ -10,10 +10,8 @@ import uproot
 import os
 import multiprocessing as mp
 import time
+import argparse
 
-
-
-pool = mp.Pool(1)
 
 #np.seterr(divide='ignore', invalid='ignore')
 
@@ -101,9 +99,8 @@ def makeNpHist(df):
     return nphistdict
 
 
-## main
-def main():
-    fname = 'BGenFiles-short.txt' #'BGenFiles.txt'
+def main(fname):
+    # fname = 'BGenFiles-short.txt' #'BGenFiles.txt'
     # read the bgenfile from txt
     # with open(fname) as f:
     #     BGenPaths = filter(None, (line.rstrip() for line in f_in))
@@ -112,41 +109,21 @@ def main():
 
     BGenPaths = ['root://xrootd-cms.infn.it/' + x for x in BGenPaths]
 
-    print('BGenPaths: ', BGenPaths)
-
-    chunksize = 40
-    BGenPathsChunks = [BGenPaths[i:i+chunksize] for i in range(0, len(BGenPaths), chunksize)]
-
-    print('BGenPathsChunks: ', BGenPathsChunks)
-
-    for filedirs in BGenPathsChunks:#DM.BGenPaths:#DM.TunCP5Path
+    for filedir in BGenPaths:#DM.TunCP5Path
         ## better to parallel across the files than folders since more files than folders exist
-        resultObj = [pool.apply_async(DM.processData, args=(filedir, 'BGen', 'UL', True)) for filedir in filedirs]
-        results = [r.get() for r in resultObj]
+
+        print(filedir)
+
+        results = DM.processData(filedir, tag='BGen', dataSet='UL', MC=True)
+
+        ## save nphists so that it can be loaded and plotted without running the whole thing again
+
+        pname = filedir.split('.')[-2].split('/')[-1]
+        pickle.dump(results, open(f'pickles/{pname}.pkl', 'wb'))
 
 
-        for filedir in filedirs:
-            df = DM.processData(filedir, tag='BGen', dataSet='UL', MC=True)
-
-        ## this needs to become it's own loop over the result objects
-        for df in results:
-
-            if df.empty:
-                print('df empty')
-                continue
-            tmpdict = makeNpHist(df)
-
-            for col in nphists:
-                nphists[col][0] += tmpdict[col][0] # histograms need to be appended
-                nphists[col][1] = tmpdict[col][1] # the edges stay the same throughout. can be done outside loop but i don't want to loop twice
-
-
-
-
-    ## save nphists so that it can be loaded and plotted without running the whole thing again
-    #import pickle
-    #pickle.dump(nphists, open('pickles/nphists.pkl', 'wb'))
-
+    import sys
+    sys.exit()
     ## plot. maybe this can be a function??
     for col in nphists:
         fig, ax = plt.subplots(figsize=(11,7))
@@ -173,6 +150,7 @@ def main():
 
 
 if __name__ == "__main__":
-    start = time.time()
-    main()
-    print(f'time taken: {time.time() - start}')
+    parser = argparse.ArgumentParser("create data vs mc pickles")
+    parser.add_argument('fname', type=str, help='name of file containing root file locations on /store/... accessed using xrootd')
+    args = parser.parse_args()
+    main(args.fname)
