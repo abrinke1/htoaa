@@ -12,8 +12,8 @@ filepath = os.path.abspath(args.filepath)
 txtfiles = os.listdir(args.filepath)
 BGenPaths = []
 for txtfile in txtfiles:
-        print(filepath+txtfile)
-        BGenPaths.append(filepath+txtfile)
+        print(f'{filepath}/{txtfile}')
+        BGenPaths.append(f'{filepath}/{txtfile}')
         #with open(args.filepath+txtfile, 'r') as f:
         #        BGenPaths.append(f.readlines()[0])
 
@@ -23,9 +23,6 @@ with open('submitall.sh' , 'w+') as submitall_f:
 
     for BGenPath in BGenPaths:
         fname = BGenPath.split('.')[-2].split('/')[-1]
-
-
-        print(fname)
 
         # make condor exec
         condor_exec_txt = (
@@ -39,7 +36,7 @@ export X509_USER_PROXY=/afs/cern.ch/user/c/csutanta/x509up_u128984
 cd /afs/cern.ch/user/c/csutanta/Projects/htoaa
 source /afs/cern.ch/user/c/csutanta/.bashrc
 time conda activate htoaa
-            time /afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/bin/python3 dataVsMC.py filepath+{fname} BGen
+            time /afs/cern.ch/work/c/csutanta/miniconda3/envs/htoaa/bin/python3 dataVsMC.py {BGenPath} BGen
 '''
         )
         with open(f'condor_exec_htoaa_{fname}.sh', 'w+') as condor_exec_f:
