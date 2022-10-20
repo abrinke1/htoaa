@@ -28,13 +28,20 @@ import time
 ## MC weights for each pt range
 #BGenWeights = [0.3234, 1.375, 72.05, 331,1]
 BGenWeights = {
-    '200to300' : 5.96579,
-    '300to500' : 1.63893,
-    '500to700' : 0.371682,
-    '700to1000' : 0.123908,
-    '1000to1500' :  0.0707572,
-    '1500to2000' : 0.0266096,
-    '2000toInf' : 0.0101252
+    # '200to300' : 5.96579,
+    # '300to500' : 1.63893,
+    # '500to700' : 0.371682,
+    # '700to1000' : 0.123908,
+    # '1000to1500' :  0.0707572,
+    # '1500to2000' : 0.0266096,
+    # '2000toInf' : 0.0101252
+    (200,300) : 5.96579,
+    (300,500) : 1.63893,
+    (500,700) : 0.371682,
+    (700,1000) : 0.123908,
+    (1000,1500) :  0.0707572,
+    (1500,2000) : 0.0266096,
+    (2000,np.Inf) : 0.0101252
 }
 
 
@@ -50,6 +57,7 @@ BGenWeights = {
 ## variables to compare MC and data
 jetVars = ['FatJet_pt',
            'FatJet_eta',
+           'FatJet_phi',
            'FatJet_mass',
            'FatJet_msoftdrop',
            'FatJet_btagCSVV2',
@@ -69,10 +77,21 @@ jetVars = ['FatJet_pt',
            'FatJet_deepTagMD_H4qvsQCD',
            'FatJet_deepTag_H',
            'FatJet_deepTag_QCD',
-           #'FatJet_btagDDBvLV2',
            'FatJet_btagHbb',
-           #'FatJet_btagDeepB',
-           #'FatJet_btagCSVV2'
+           'FatJet_deepTagMD_ZbbvsQCD',
+           'FatJet_deepTagMD_ZvsQCD',
+           'FatJet_deepTag_QCDothers',
+           'FatJet_deepTag_ZvsQCD',
+           'FatJet_n3b1',
+           'FatJet_particleNetMD_Xqq',
+           'FatJet_particleNet_ZvsQCD',
+           'FatJet_tau1',
+           'FatJet_tau2',
+           'FatJet_tau3',
+           'FatJet_tau4',
+           'FatJet_lsf3',
+           'FatJet_jetId',
+           'FatJet_nConstituents',
 
            #'SubJet_mass(1)',
            #'SubJet_mass(2)',
@@ -96,11 +115,13 @@ ak4JetVars = ['Jet_btagDeepFlavB']
 
 PVVars = ['PV_npvs', 'PV_npvsGood']
 
+otherVars = ['run','luminosityBlock','event', 'PV_npvs', 'PV_npvsGood']
+
 allVars = list(jetVars + muonVars + PVVars + ak4JetVars + ['LHE_HT'])
 allVars.sort()
 
 ## for checking that input into processData have the valid cases setup
-tagslist = ['BGen' , 'QCD', 'WJets', 'ZJets', 'TunCP5']
+tagslist = ['BGen' , 'QCD', 'WJets', 'ZJets', 'TunCP5', 'ggH']
 
 ## dataset list
 dataSetList = ['UL']
@@ -143,7 +164,8 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     jets = PhysObj('jets' + fileName)
     # muons = PhysObj('muons' + fileName)
     other = PhysObj('other' + fileName)
-    ak4Jets = PhysObj('ak4Jets' + fileName)
+    #ak4Jets = PhysObj('ak4Jets' + fileName)
+    genPart = PhysObj('genPart' + fileName)
 
     ## data doens't have LHE_HT
     if tag == 'data' and 'LHE_HT' in allVars:
@@ -153,16 +175,7 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     ## fatjets vars
     for v in jetVars:
         jets[v] = pd.DataFrame(events.array(v))
-    # jets['FatJet_pt'] = pd.DataFrame(events.array('FatJet_pt'))
-    # jets['FatJet_eta'] = pd.DataFrame(events.array('FatJet_eta'))
-    # jets['FatJet_mass'] = pd.DataFrame(events.array('FatJet_mass'))
-    # jets['FatJet_btagCSVV2'] = pd.DataFrame(events.array('FatJet_btagCSVV2'))
-    # jets['FatJet_btagDeepB'] = pd.DataFrame(events.array('FatJet_btagDeepB'))
-    # jets['FatJet_msoftdrop'] = pd.DataFrame(events.array('FatJet_msoftdrop'))
-    # jets['FatJet_btagDDBvLV2'] = pd.DataFrame(events.array('FatJet_btagDDBvLV2'))
-    # jets['FatJet_deepTagMD_H4qvsQCD'] = pd.DataFrame(events.array('FatJet_deepTagMD_H4qvsQCD'))
-    # jets['FatJet_phi'] = pd.DataFrame(events.array('FatJet_phi'))
-    # jets['FatJet_n2b1'] = pd.DataFrame(events.array('FatJet_n2b1'))
+
     #jets['SubJet_mass(1)'] = getSubJetData(1,'SubJet_mass', events)
     #jets['SubJet_mass(2)'] = getSubJetData(2, 'SubJet_mass', events)
     #jets['SubJet_tau1(1)'] = getSubJetData(1, 'SubJet_tau1', events)
@@ -174,16 +187,10 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     # jets['SubJet_btagDeepB(2)'] = getSubJetData(2, 'SubJet_btagDeepB', events)
     # jets['SubJet_tau1(2)'] = getSubJetData(2, 'SubJet_tau1', events)
 
-    for v in ak4JetVars:
-        ak4Jets[v] = pd.DataFrame(events.array(v))
-    # ak4Jets['Jet_pt'] = pd.DataFrame(events.array('Jet_pt'))
-    # ak4Jets['Jet_eta'] = pd.DataFrame(events.array('Jet_eta'))
-    # ak4Jets['Jet_puId'] = pd.DataFrame(events.array('Jet_puId'))
-    # ak4Jets['Jet_phi'] = pd.DataFrame(events.array('Jet_phi'))
-    # ak4Jets['Jet_btagDeepB'] = pd.DataFrame(events.array('Jet_btagDeepB'))
+    #for v in ak4JetVars:
+    #    ak4Jets[v] = pd.DataFrame(events.array(v))
 
     ## fill muon physics objects (only for parked dataset)
-
     # muons['Muon_pt'] = pd.DataFrame(events.array('Muon_pt'))
     # muons['Muon_eta'] = pd.DataFrame(np.abs(events.array('Muon_eta')))
     # muons['Muon_ip3d'] = pd.DataFrame(events.array('Muon_ip3d'))
@@ -191,17 +198,33 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     # muons['Muon_IP'] = pd.DataFrame(events.array('Muon_dxy')/events.array('Muon_dxyErr')).abs()
 
 
+    ## gen particle
+    Aid = 36
+    bid = 5
+    if 'ggH' == tag:
+        pdgid = events.array('GenPart_pdgId')
+        genPart['GenPart_pdgId'] = pd.DataFrame(pdgid)
+        genPart['GenPartMother'] = pd.DataFrame(pdgid[events.array('GenPart_genPartIdxMother')])
+        genPart['GenPart_eta'] = pd.DataFrame(events.array('GenPart_eta'))
+        genPart['GenPart_phi'] = pd.DataFrame(events.array('GenPart_phi'))
+        genPart['GenPart_status'] = pd.DataFrame(events.array('GenPart_status'))
+        genPart['GenPart_pt'] = pd.DataFrame(events.array('GenPart_pt'))
+
     ## other vars
     if MC:
         other['LHE_HT'] = pd.DataFrame(events.array('LHE_HT')).astype(np.float64)
-    other['PV_npvs'] = pd.DataFrame(events.array('PV_npvs'))
-    other['PV_npvsGood'] = pd.DataFrame(events.array('PV_npvsGood'))
-
+    for v in otherVars:
+        other[v] = pd.DataFrame(events.array(v))
 
     ## make Event object
-    ev = Event(jets, other, ak4Jets)
+    ev = Event(jets, other, genPart) #ak4Jets, genPart)
 
     ## cutting events
+    if 'ggH' == tag:
+        genPart.cut(np.abs(genPart['GenPart_pdgId']) == 5)
+        genPart.cut(genPart['GenPart_status'] == 23)
+
+
     ## jet cuts
     jets.cut(jets['FatJet_pt'] > 170)
     jets.cut(jets['FatJet_eta'].abs() < 2.4)
@@ -234,20 +257,49 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     ## passed into getMaxPt
     if MC:
         other.LHE_HT = other.LHE_HT.rename({0:'LHE_HT'}, axis='columns')
-    other.PV_npvs = other.PV_npvs.rename({0:'PV_npvs'}, axis='columns')
-    other.PV_npvsGood =other.PV_npvsGood.rename({0:'PV_npvsGood'}, axis='columns')
+    for v in otherVars:
+        other[v] = other[v].rename({0:v}, axis='columns')
+    #other.PV_npvs = other.PV_npvs.rename({0:'PV_npvs'}, axis='columns')
+    #other.PV_npvsGood =other.PV_npvsGood.rename({0:'PV_npvsGood'}, axis='columns')
+
 
     ## sync so all events cut to same events after apply individual cuts
     ev.sync()
+
+    if 'ggH' == tag:
+        for i in genPart:
+            genPart[i] = genPart[i].dropna(axis=1, how='all')
+
+        ev.sync()
+
 
     ## return empty frame if nothing is left after cuts
     if jets.FatJet_pt.empty:
         return pd.DataFrame()
 
     else:
+
         ## Return only the highest pt physics objects and their related variables
         maxPtJets = getMaxPt(jets, 'FatJet_pt')
-        maxPtData = maxPtJets
+        #maxPtGenPart = getMaxPt(genPart, 'GenPart_pt')
+        ## find a way to
+        maxPtData = maxPtJets# pd.concat([maxPtJets, maxPtGenPart], axis=1)
+
+
+
+        ## get each of the 4 genparts here???
+        if 'ggH' == tag:
+            pt = np.array(genPart['GenPart_pt'])
+            eta = np.array(genPart['GenPart_eta'])
+            pt2 = genPart['GenPart_pt'].to_numpy()
+            ranking = np.argsort(pt)
+
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPart_pt', maxPtData)
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPart_eta', maxPtData)
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPart_phi', maxPtData)
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPart_pdgId', maxPtData)
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPart_status', maxPtData)
+            maxPtData = addGenPartToDf(ranking, genPart, 'GenPartMother', maxPtData)
 
         ## !!!!!!!!!! SI: MAYBE DO MUONS TOO !!!!!!!!!!!!!!!!!!!!!
         #maxPtMuons = getMaxPt(muons, 'Muon_pt')
@@ -255,6 +307,9 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
 
         maxPtData = maxPtData.assign(PV_npvs=other.PV_npvs.to_numpy())
         maxPtData = maxPtData.assign(PV_npvsGood=other.PV_npvsGood.to_numpy())
+        maxPtData = maxPtData.assign(run=other.run.to_numpy())
+        maxPtData = maxPtData.assign(luminosityBlock=other.luminosityBlock.to_numpy())
+        maxPtData = maxPtData.assign(event=other.event.to_numpy())
 
         ## add index back into the df for comparison
         # maxPtData['eventNum'] = jets.FatJet_pt.index
@@ -265,10 +320,36 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         ## applying weighing factors for MC to match data
         ## LHE_weights
 
+        if 'ggH'==tag:
+            maxPtData = maxPtData.assign(final_weights=1)
+
         if 'BGen'==tag:
-            maxPtData = maxPtData.assign(final_weights =1 )
-            #print(fileName)
-            #key = re.search('QCD_HT(.*)_', fileName).group(1) ##find which HT range from filename
+            # just check the LHE HT of thefile and pply the right one
+            lhe = maxPtData['LHE_HT'].iloc[0]
+            for key in BGenWeights:
+                if (lhe >= key[0]) and (lhe < key[1]):
+                    weights = BGenWeights[key]
+
+
+            # if (lhe >= 200) and (lhe < 300):
+            #     weights = BGenWeights['200to300']
+            # elif (lhe >=300) and (lhe < 500):
+            #     weights = BGenWeights['300to500']
+            # elif (lhe >= 500) and (lhe < 700):
+            #     weights = BGenWeights['500to700']
+            # elif (lhe >= 700) and (lhe < 1000):
+            #     weights = BGenWeights['700to1000']
+            # elif (lhe >= 1000) and (lhe < 1500):
+            #     weights = BGenWeights['1000to1500']
+            # elif (lhe >= 1500) and (lhe <2000):
+            #     weights = BGenWeights['1500to2000']
+            # else:
+            #     weights = BGenWeights['2000toInf']
+
+            maxPtData['LHE_weights'] = weights
+            maxPtData['final_weights'] = weights
+            # print(fileName)
+            # key = re.search('QCD_HT(.*)_', fileName).group(1) ##find which HT range from filename
             # maxPtData['LHE_weights'] = BGenWeights[key]
             # for i in BGenDict:
             #     if i in fileName:
@@ -296,7 +377,37 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
             maxPtData['final_weights'] = ParkedDataDict[filePath]
 
 
+
+    # make sure genpart has dr < 0.8 to the main fatjet
+    if 'ggH' == tag:
+        for i in range(1,5):
+            maxPtData[f'dr{i}'] = calcDr(maxPtData['FatJet_phi'], maxPtData['FatJet_eta'], maxPtData[f'GenPart_phi{i}'], maxPtData[f'GenPart_eta{i}'])
+
+        for i in range(1,5):
+            maxPtData = maxPtData[maxPtData[f'dr{i}'] < 0.8]
+
     #maxPtData['FatJet_nSV'] = getnSVCounts(jets, events)
     maxPtData = maxPtData.dropna(how='all')
     #maxPtData = maxPtData.fillna(0)
+
+    return maxPtData
+
+def calcDr(phi1, eta1, phi2, eta2):
+    ## dr^2 = (eta1-eta2)^2 + dphi^2
+    dphi = np.abs(phi1-phi2)
+    dphi[dphi>=np.pi] = 2*np.pi-dphi[dphi>=np.pi]
+    return np.sqrt(np.square(eta1-eta2) + np.square(dphi))
+
+## takes the argsort array (mostly likely argsort of the genpart pt), the genPart physics object,
+## var to add to maxPtData (such as pt,eta,phi), then the maxPtData to add these variables to
+## returns the maxPtData with the genPart variables added to it with var1 corresponding to the highest
+## var by arg sort. such as eta1 is the eta of the highest pt if sorted by pt
+def addGenPartToDf(ranking, genPart, v, maxPtData):
+    arr = np.array(genPart[v])
+    sorted = np.take_along_axis(arr, ranking, axis=1)
+    num = {0:4, 1:3, 2:2, 3:1} ## need this because argsort only sorts ascending
+    for i in range(3,-1,-1): #going from 3 to 0
+        print(f'{v}_{num[i]}')
+        maxPtData[f'{v}{num[i]}'] = sorted[:,i]
+
     return maxPtData

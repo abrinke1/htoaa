@@ -9,8 +9,7 @@
 #import os
 #import subprocess
 #import sys
-import uproot
-import json
+import uproot, json
 import numpy as np
 #import awkward
 import matplotlib.pyplot as plt
@@ -21,7 +20,7 @@ import pandas as pd
 #import itertools as it
 import copy as cp
 from munch import DefaultMunch
-# from ROOT import TH1F
+# from ROOT import TH1F, TFile
 #import types
 import mplhep as hep
 from scipy.stats import norm
@@ -32,7 +31,13 @@ def stepy(ys):
     return np.tile(ys, (2,1)).T.flatten()
 
 def dphi(phi1,phi2):
-    return abs(phi1-phi2).combine(abs(phi1-phi2+(2*np.pi)),min).combine(abs(phi1-phi2-(2*np.pi)),min)
+    return abs(phi1-phi2).combine(abs(phi1-phi2+(2*np.pi)),np.minimum).combine(abs(phi1-phi2-(2*np.pi)),np.minimum)
+
+class dframe(pd.DataFrame):
+    def __and__(self, other):
+        return np.logical_and(self, other)
+    def __or__(self, other):
+        return np.logical_or(self, other)
 
 #class HackyTH1(uproot_methods.classes.TH1.Methods, list):
 #    def __init__(self, low, high, values, title=""):
@@ -61,7 +66,7 @@ class Hist(object):
         if (i > 1) or (i < -2):
             raise Exception('histo object was accessed with an invalid index')
         return s.hs[i]
-    
+
     def __setitem__(s,i,val):
         if (i > 1) or (i < -2):
             raise Exception('histo object was accessed with an invalid index')
@@ -77,13 +82,13 @@ class Hist(object):
         s.hs[0] = s.hs[0] + inplot[0]
         s.ser = s.ser + inplot.ser
         return s
-    
+
     ## Subtracts the values of a passed histogram from the class's plot
     def sub(s,inplot,split=False):
         if (len(inplot[0]) != len(s.hs[0])) or (len(inplot[1]) != len(s.hs[1])):
             raise Exception('Mismatch between passed and stored histogram dimensions')
         if split == True:
-            s = cp.deepcopy(s) 
+            s = cp.deepcopy(s)
         s.hs[0] = s.hs[0] - inplot[0]
         s.ser = s.ser + inplot.ser
         return s
@@ -112,11 +117,11 @@ class Hist(object):
         if split:
             s = cp.deepcopy(s)
         inplot = cp.deepcopy(inplot)
-        
+
         if trimnoise:
             s.hs[0][s.hs[0]<trimnoise]=np.nan
             inplot[0][inplot[0]<trimnoise]=np.nan
-        
+
         upper, lower = [],[]
         for i in range(len(s.hs[0])):
             if errmethod == 'default':
@@ -145,7 +150,7 @@ class Hist(object):
                 upper.append(min(delta*delta,np.power(1-avg,2)))
                 lower.append(min(delta*delta,np.power(avg,2)))
         if errmethod == 'effnorm': s.ser = np.array([lower,upper])
-        
+
         # A = s.hs[0]
         # eA = np.sqrt(s.ser)
         s.hs[0] = np.divide(s.hs[0],inplot[0], where=inplot[0]!=0)
@@ -156,10 +161,10 @@ class Hist(object):
         # s.ser = (s.hs[0]*s.hs[0])*(np.power(eA/A,2)+np.power(np.sqrt(inplot.ser)/inplot[0],2))
         #s.ser[np.isnan(s.ser)] = 0.
         return s
-    
+
     def divideBy(s,*args,**kwargs):
         return s.divideby(*args,**kwargs)
-    
+
     ## Normalizes the histogram by the magnitude of a specified bin
     def norm(s,tar=0,split=False):
         if split:
@@ -167,14 +172,23 @@ class Hist(object):
         nval = s.hs[0][tar]
         s.hs[0] = s.hs[0]/nval
         return s
-    
+
     ## Divides the histogram's bins, and its squared uncertainty sum, by a number.
-    def ndivide(s,num=1):
+    def ndivide(s,num=1,split=False):
+        if split:
+            s = cp.deepcopy(s)
         if num == 0:
             raise Exception(f"You tried to divide {s.fname} by 0")
         s.hs[0] = s.hs[0]/num
         s.ser = s.ser/(num*num)
         return s
+
+    # def nmulti(s,num=1,split=False):
+    #     if split:
+    #         s = cp.deepcopy(s)
+    #     s.hs[0] = s.hs[0]*num
+    #     s.ser = s.ser*(num*num)
+    #     return s
 
     ## Creates and returns a pyplot-compatible histogram object
     def make(s,logv=False,htype='bar',color=None,linestyle='solid',error=False,parent=plt):
@@ -186,45 +200,48 @@ class Hist(object):
             plot = parent.errorbar(s.hs[1][:-1]+binwidth/2,s.hs[0],yerr=np.sqrt(s.ser),fmt=f".{color}",
                         color=color,linewidth=2,capsize=3)
             if logv:
-                parent.yscale('log')
+                if logv == 'set':
+                    parent.set_yscale('log')
+                else:
+                    parent.yscale('log')
             return plot
         plot = parent.hist(s.hs[1][:-1],s.hs[1],weights=s.hs[0],
-                        log=logv,histtype=htype,color=color,linestyle=linestyle,linewidth=0)
+                        log=logv,histtype=htype,color=color,linestyle=linestyle,linewidth=2)
         if error==True:
             parent.fill_between(stepx(s.hs[1]),stepy(s.hs[0]-np.sqrt(s.ser)),stepy(s.hs[0]+np.sqrt(s.ser)),
                              alpha=0.0,hatch='xxxxxx',zorder=2,label='_nolegend_')
-            
+
         return plot
         #return hep.histplot(s.hs[0],s.hs[0],log=logv,histtype=htype,color=color,linestyle=linestyle)
     def plot(s,ylim=False,same=False,legend=False,figure=False,clean=False,**args):
         if not same:
             plt.clf()
         s.make(**args)
-        
-       
+
+
         if not figure:
             fig = plt.gcf()
         else: fig = figure
         fig.set_size_inches(10.0, 6.0)
-        
-       
-        
+
+
+
         if 'parent' in args:
             args['parent'].grid(True)
             if not clean: hep.cms.label(loc=0,year='2018',ax=args['parent'])
             if legend:
-                args['parent'].legend(legend,loc=0)
+                args['parent'].legend(legend,loc=4)
             if ylim:
                 args['parent'].set_ylim(ylim)
             if s.xlabel != '':
                 args['parent'].set_xlabel(s.xlabel,fontsize=14)
             if s.ylabel != '':
                 args['parent'].set_ylabel(s.ylabel,fontsize=18)
-        else:    
+        else:
             plt.grid(True)
             hep.cms.label(loc=0,year='2018')
             if legend:
-                 plt.legend(legend,loc=0)
+                 plt.legend(legend,loc=4)
             if ylim:
                 plt.ylim(ylim)
             if s.xlabel != '':
@@ -235,9 +252,9 @@ class Hist(object):
                 plt.title(s.title)
         if s.fname != '':
             if figure:  figure.savefig(s.fname)
-            else:       plt.savefig(s.fname)
+        else:       plt.savefig(s.fname)
         plt.close(s.fig)
-       
+
     ## Shortcut for creating stacked plots of two comperable datasets
     def stackplot(s,phist,ylim=False):
         plt.clf()
@@ -252,28 +269,27 @@ class Hist(object):
         if s.title != '':
             plt.title(s.title)
         if s.fname != '':
-            plt.savefig(s.fname+'_v')    
-            
+            plt.savefig(s.fname+'_v')
+
     # def toTH1(s,title,scale=1):
     #     th1 = TH1F(title,title,len(s.hs[0]),s.hs[1][0],s.hs[1][-1])
     #     for i in range(len(s.hs[0])):
     #         th1.SetBinContent(i,s.hs[0][i]*scale)
     #         th1.SetBinError(i,np.sqrt(s.ser[i])*scale)
     #     return th1
-    
-#    def errtoTH1(s,scale=1):
-#        return np.histogram(s.hs[1][12:-5],s.hs[1][12:-4],weights=np.sqrt(s.ser[12:-4])*scale)
-#    
-##    errToTh1 = errtoTH1
-#    def errToTH1(s,scale=1):
-#        return s.errtoTH1(scale)
+
+    # def errtoTH1(s,scale=1):
+    #     return np.histogram(s.hs[1][12:-5],s.hs[1][12:-4],weights=np.sqrt(s.ser[12:-4])*scale)
+
+    # def errToTH1(s,scale=1):
+    #     return s.errtoTH1(scale)
 
 
 class Hist2d(object):
-    def __init__(s,sizes,bounds,xlabel='',ylabel='',fname='',title=''):
+    def __init__(s,sizes,bounds='',xlabel='',ylabel='',fname='',title=''):
         s.sizes = sizes
         s.bounds = bounds
-        s.hs = [plt.hist2d([],[],sizes,bounds)[0],plt.hist2d([],[],sizes,bounds)[1],plt.hist2d([],[],sizes,bounds)[2]]#,plt.hist2d([],[],sizes,bounds)]
+        s.hs = [plt.hist2d([],[],sizes,bounds)[0],plt.hist2d([],[],sizes,bounds)[1],plt.hist2d([],[],sizes,bounds)[2]]
         s.xlabel = xlabel
         s.ylabel = ylabel
         s.title = title
@@ -283,7 +299,7 @@ class Hist2d(object):
         if (i > 2) or (i < -3):
             raise Exception('hist2d object was accessed with an invalid index')
         return s.hs[i]
-    
+
     def __setitem__(s,i,val):
         if (i > 2) or (i < -3):
             raise Exception('hist2d object was accessed with an invalid index')
@@ -316,19 +332,21 @@ class Hist2d(object):
         plt.clf()
         #out = plt.imshow(s.hs[0].T[::-1],extent=(s.bounds[0][0],s.bounds[0][1],s.bounds[1][0],s.bounds[1][1]),aspect='auto',origin='upper')
         out = plt.pcolor(s.hs[1],s.hs[2],s.hs[0].T,edgecolor=edgecolor,linewidth=linewidth)
-        return out    
+        return out
 
-    def plot(s,logv=False,text=False,empty=False,*args,**kwargs):
+    def plot(s,logv=False,text=False,empty=False,tlen=3,*args,**kwargs):
         if not empty:
             s.make(*args,**kwargs)
         #print(s.hs[0])
         #print(s.hs[1])
         #print(s.hs[2])
         if text:
-            strarray = s.hs[0].round(3).astype(str)
+            strarray = s.hs[0].round(tlen).astype(str)
             for i in range(len(s.hs[1])-1):
                 for j in range(len(s.hs[2])-1):
-                    plt.text(s.hs[1][i]+0.5,s.hs[2][j]+0.5, strarray[i,j],color="w", ha="center", va="center", fontweight='normal',fontsize=9).set_path_effects([PathEffects.withStroke(linewidth=2,foreground='k')])
+                    hf = (s.hs[1][i+1] - s.hs[1][i])/2
+                    vf = (s.hs[2][j+1] - s.hs[2][j])/2
+                    plt.text(s.hs[1][i]+hf,s.hs[2][j]+vf, strarray[i,j],color="w", ha="center", va="center", fontweight='normal',fontsize=9).set_path_effects([PathEffects.withStroke(linewidth=2,foreground='k')])
         else:
             plt.colorbar()
         if s.xlabel != '':
@@ -364,18 +382,18 @@ class PhysObj(DefaultMunch):
         #s.update({key:value})
         return s
 
-    ## Removes events that are missing, in the passed frame
+    ## Removes events that are missing in the passed frame
     def trimto(s,frame,split=False):
         if split:
             s = s.deepcopy()
         for elem in s:
             s[elem] = s[elem].loc[frame.index.intersection(s[elem].index)]
         return s
-    
+
     def trimTo(s,*args,**kwargs):
         s = s.trimto(*args,**kwargs)
         return s
-    
+
     ## Removes events that are missing, from the passed frame (probably not ideal to have to do this)
     def trim(s,frame):
         for elem in s:
@@ -383,19 +401,23 @@ class PhysObj(DefaultMunch):
         return frame
 
     ## Removes particles that fail the passed test, and events if they become empty
-    def cut(s,mask,split=False):
+    def cut(s,mask,split=False,drop=True):
         if split:
             s = s.deepcopy()
         for elem in s:
-            s[elem] = s[elem][mask].dropna(how='all')
+            s[elem] = s[elem][mask]
+            if drop:
+                s[elem] = s[elem].dropna(how='all')
+                ## Comment this out if you don't want to allow object columns to be deleted
+                s[elem] = s[elem].dropna(how='all',axis=1)
         return s
-    
+
     def deepcopy(s):
         tobj = PhysObj(s.name)
         for prop in s:
             tobj[prop] = cp.deepcopy(s[prop])
         return tobj
-    
+
 
 class Event():
     def __init__(s,*args):
@@ -434,14 +456,14 @@ class Event():
         for obj in s.objs:
             s[obj].trimto(s.frame)
         return s
-    
+
     def sync(s,split=False):
         if split:
             s = cp.deepcopy(s)
         s.scan()
         s.applycuts()
         return s
-    
+
 class InputConfig(object):
     def __init__(s,sigfile,bgfile):
         with open(sigfile) as f:
@@ -461,6 +483,8 @@ class InputConfig(object):
             elif 'filepairs' in sigdata:
                 s.sigfiles,s.sigweight = s.expandpairs(sigdata['filepairs'])
             else: raise NameError("Could not find 'files' or 'filepairs' in input file")
+            if 'isqcd' in sigdata:
+                raise NameError("Signal MC isn't expected to be part of QCD background")
         with open(bgfile) as f:
             bgdata = json.load(f)
             if 'isdata' in bgdata:
@@ -474,18 +498,21 @@ class InputConfig(object):
             else: bnormweight = False
             if 'files' in bgdata:
                 s.bgfiles =     bgdata['files']
-                s.bgweight =    bgdata['weight']
+                s.bgweight =    np.array(bgdata['weight'])
             elif 'filepairs' in bgdata:
                 s.bgfiles,s.bgweight = s.expandpairs(bgdata['filepairs'])
             else: raise NameError("Could not find 'files' or 'filepairs' in input file")
+            if 'isqcd' in bgdata:
+                s.bgqcd = bgdata['isqcd']
+            else: s.bgqcd = s.bgweight * 0
         if type(s.sigfiles) == str:
             s.sigfiles = [s.sigfiles]
         if type(s.bgfiles) == str:
             s.bgfiles = [s.bgfiles]
         signum = len(s.sigfiles)
         bgnum =  len(s.bgfiles)
-        
-    
+
+
         if s.bglhe == True and s.siglhe == True:
             raise ValueError("Signal and background sources can't both be lhe split")
         elif s.bglhe == True:
@@ -497,9 +524,9 @@ class InputConfig(object):
             while len(s.sigfiles) < max(signum,bgnum):
                 s.sigfiles.append(s.sigfiles[signum*-1])
             while len(s.bgfiles) < max(signum,bgnum):
-                s.bgfiles.append(s.bgfiles[signum*-1])  
+                s.bgfiles.append(s.bgfiles[signum*-1])
             s.size = max(signum,bgnum)
-        
+
         ## Loop weights to match input dimensions
         if type(s.sigweight)==list:
             while len(s.sigweight) < len(s.sigfiles):
@@ -511,7 +538,7 @@ class InputConfig(object):
             for i in range(s.size):
                 tlst.append(s.sigweight)
             s.sigweight = tlst
-            
+
         if type(s.bgweight)==list:
             while len(s.bgweight) < len(s.bgfiles):
                 s.bgweight.append(s.bgweight[bgnum*-1])
@@ -522,12 +549,12 @@ class InputConfig(object):
             for i in range(s.size):
                 tlst.append(s.bgweight)
             s.bgweight=tlst
-            
+
         if snormweight:
             s.sigweight = np.divide(s.sigweight,max(s.sigweight))
         if bnormweight:
             s.bgweight = np.divide(s.bgweight,max(s.bgweight))
-            
+
     def expandpairs(s,pairs):
         flist, wlist = []
         if (len(pairs) % 2):
@@ -535,42 +562,4 @@ class InputConfig(object):
         for i in range(0,len(pairs),2):
             flist.append(pairs[i])
             wlist.append(pairs[i+1])
-        return flist, wlist       
-    
-                
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-                
-        
-            
+        return flist, wlist

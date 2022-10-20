@@ -47,7 +47,7 @@ histranges = {           'FatJet_btagCSVV2' :   ((0,1), 20),
               'FatJet_particleNet_HbbvsQCD' :   ((0,1),20),
                  'FatJet_particleNetMD_QCD' :   ((0,1),20),
                    'FatJet_particleNet_QCD' :   ((0,1),20),
-                         'FatJet_particleNet_mass' :   ((0,250), 20),
+                  'FatJet_particleNet_mass' :   ((0,250), 20),
                 'FatJet_deepTagMD_HbbvsQCD' :   ((0,1), 20),
                'FatJet_deepTagMD_ZHbbvsQCD' :   ((0,1), 20),
                'FatJet_deepTagMD_bbvsLight' :   ((0,1), 20),
@@ -59,8 +59,8 @@ histranges = {           'FatJet_btagCSVV2' :   ((0,1), 20),
               #'Muon_ip3d' : (0, 0.5),
               #'Muon_pt' : (0, 300),
               #'Muon_softId' : (0,1),
-              'PV_npvs' : ((1,90), 10),
-                         'PV_npvsGood': ((0,70), 10)}
+                                  'PV_npvs' : ((1,90), 10),
+                               'PV_npvsGood': ((0,70), 10)}
 
 nphists = {col:[0.0, 0.0] for col in histranges}
 cols = histranges.keys()
@@ -99,7 +99,7 @@ def makeNpHist(df):
     return nphistdict
 
 
-def main(fname):
+def main(fname,tag):
     # fname = 'BGenFiles-short.txt' #'BGenFiles.txt'
     # read the bgenfile from txt
     # with open(fname) as f:
@@ -114,43 +114,18 @@ def main(fname):
 
         print(filedir)
 
-        results = DM.processData(filedir, tag='BGen', dataSet='UL', MC=True)
+        results = DM.processData(filedir, tag=tag, dataSet='UL', MC=True)
 
         ## save nphists so that it can be loaded and plotted without running the whole thing again
 
         pname = filedir.split('.')[-2].split('/')[-1]
-        pickle.dump(results, open(f'pickles/{pname}.pkl', 'wb'))
-
-
-    import sys
-    sys.exit()
-    ## plot. maybe this can be a function??
-    for col in nphists:
-        fig, ax = plt.subplots(figsize=(11,7))
-        bincen = getBinCenter(nphists[col][1])
-        bar = nphists[col][0]
-        width = (bincen[1] - bincen[0])
-        ax.bar(bincen, bar, width=width)
-        ax.set_title('BGenFilter_TuneCP5')
-        ax.set_xlabel(col)
-        plt.savefig(f'ULPlots/{col}.png', bbox_inches='tight')
-        plt.close(fig)
-
-        fig, ax = plt.subplots(figsize=(11,7))
-        bincen = getBinCenter(nphists[col][1])
-        bar = nphists[col][0]
-        width = (bincen[1] - bincen[0])
-        ax.bar(bincen, bar, width=width)
-        ax.set_title('BGenFilter_TuneCP5')
-        ax.set_xlabel(col + ' LogY Scale')
-        ax.set_yscale('log')
-        plt.savefig(f'ULPlots/{col}-logY.png', bbox_inches='tight')
-        plt.close(fig)
+        pickle.dump(results, open(f'pickles/{tag}/{pname}.pkl', 'wb'))
 
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("create data vs mc pickles")
     parser.add_argument('fname', type=str, help='name of file containing root file locations on /store/... accessed using xrootd')
+    parser.add_argument('tag', type=str, help='BGen, ggH, etc. check datavsmc_datamanager for available tags'
     args = parser.parse_args()
-    main(args.fname)
+    main(args.fname,args.tag)
