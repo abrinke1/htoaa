@@ -11,7 +11,7 @@ import os
 import multiprocessing as mp
 import time
 import argparse
-
+from pathlib import Path
 
 #np.seterr(divide='ignore', invalid='ignore')
 
@@ -28,7 +28,6 @@ root = True
 #    prediction = loadedModel.predict_proba(dataDf[trainVars])
 #    dataDf = dataDf.assign(BDTScore=prediction[:,1])
 #    return dataDf
-
 
 
 
@@ -119,6 +118,8 @@ def main(fname,tag):
         ## save nphists so that it can be loaded and plotted without running the whole thing again
 
         pname = filedir.split('.')[-2].split('/')[-1]
+
+        Path(f"pickles/{tag}").mkdir(parents=True, exist_ok=True)
         pickle.dump(results, open(f'pickles/{tag}/{pname}.pkl', 'wb'))
 
 
@@ -126,6 +127,6 @@ def main(fname,tag):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("create data vs mc pickles")
     parser.add_argument('fname', type=str, help='name of file containing root file locations on /store/... accessed using xrootd')
-    parser.add_argument('tag', type=str, help='BGen, ggH, etc. check datavsmc_datamanager for available tags'
+    parser.add_argument('tag', type=str, help='BGen, ggH, etc. check datavsmc_datamanager for available tags')
     args = parser.parse_args()
     main(args.fname,args.tag)

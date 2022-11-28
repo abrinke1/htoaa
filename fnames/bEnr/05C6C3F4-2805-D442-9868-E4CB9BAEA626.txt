@@ -1,0 +1,1 @@
+/store/mc/RunIISummer20UL18NanoAODv9/QCD_bEnriched_HT200to300_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/05C6C3F4-2805-D442-9868-E4CB9BAEA626.root

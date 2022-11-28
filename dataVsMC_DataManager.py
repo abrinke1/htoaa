@@ -28,22 +28,34 @@ import time
 ## MC weights for each pt range
 #BGenWeights = [0.3234, 1.375, 72.05, 331,1]
 BGenWeights = {
-    # '200to300' : 5.96579,
-    # '300to500' : 1.63893,
-    # '500to700' : 0.371682,
-    # '700to1000' : 0.123908,
-    # '1000to1500' :  0.0707572,
-    # '1500to2000' : 0.0266096,
-    # '2000toInf' : 0.0101252
-    (200,300) : 5.96579,
-    (300,500) : 1.63893,
-    (500,700) : 0.371682,
-    (700,1000) : 0.123908,
-    (1000,1500) :  0.0707572,
-    (1500,2000) : 0.0266096,
-    (2000,np.Inf) : 0.0101252
+    (200,300) : 111800000. /  14830551, #5.96579,
+    (300,500) : 28070000. /  14144826, #1.63893,
+    (500,700) : 3082000. /   8004808, #0.371682,
+    (700,1000) : 724200. /   4642245, #0.123908,
+    (1000,1500) :  138200. /   1537452, #0.0707572,
+    (1500,2000) : 13610. /   1263157, #0.0266096,
+    (2000,np.Inf) : 2909. /   1300672, #0.0101252
 }
 
+bEnrWeights = {
+    (200,300) : 80430000. / 19407546,
+    (300,500) : 16620000. / 12042685,
+    (500,700) : 1487000. / 10381843,
+    (700,1000) : 296000. /  2031431,
+    (1000,1500) : 46610. /   474198,
+    (1500,2000) : 3720. /   411724,
+    (2000,np.Inf) : 646.2 /  401397
+    }
+
+IncQCDWeights = {
+    (200,300) : 1547000000. / 54289442,
+    (300,500) : 322600000. / 54661579,
+    (500,700) : 29980000. / 55152960,
+    (700,1000) : 6334000. / 48158738,
+    (1000,1500) : 1088000. / 15466225,
+    (1500,2000) : 99110. / 10955087,
+    (2000,np.Inf) : 20230. /  5475677
+    }
 
 ## dict of file and weights
 #BGenDict = dict(zip(BGenPaths, BGenWeights))
@@ -51,8 +63,6 @@ BGenWeights = {
 # QCDIncDict = dict(zip(QCDIncPaths,QCDIncWeight))
 #ZJetsDict = dict(zip(ZJetsPaths, ZJetsWeight))
 #WJetsDict = dict(zip(WJetsPaths, WJetsWeight))
-
-
 
 ## variables to compare MC and data
 jetVars = ['FatJet_pt',
@@ -121,12 +131,10 @@ allVars = list(jetVars + muonVars + PVVars + ak4JetVars + ['LHE_HT'])
 allVars.sort()
 
 ## for checking that input into processData have the valid cases setup
-tagslist = ['BGen' , 'QCD', 'WJets', 'ZJets', 'TunCP5', 'ggH']
+tagslist = ['BGen' , 'bEnr', 'QCD', 'WJets', 'ZJets', 'TunCP5', 'ggH']
 
 ## dataset list
 dataSetList = ['UL']
-
-
 
 
 ## filePath: (str) path to root file to process
@@ -217,12 +225,19 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         other[v] = pd.DataFrame(events.array(v))
 
     ## make Event object
-    ev = Event(jets, other, genPart) #ak4Jets, genPart)
+    if ('BGen' == tag) or ('bEnr' == tag):
+        ev = Event(jets, other)
+    elif 'ggH' == tag:
+        ev = Event(jets, other, genPart) #ak4Jets, genPart)
+
 
     ## cutting events
     if 'ggH' == tag:
         genPart.cut(np.abs(genPart['GenPart_pdgId']) == 5)
+
+        ev.sync()
         genPart.cut(genPart['GenPart_status'] == 23)
+        ev.sync()
 
 
     ## jet cuts
@@ -235,17 +250,12 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     # jets.cut(jets['FatJet_mass'] > 90)
     # jets.cut(jets['FatJet_mass'] <= 200)
     other.cut(other['PV_npvsGood'] >= 1)
-
-    ev.sync()
-
     ## muon cuts
     # muons.cut((muons['Muon_softId'] > 0.9))
     # muons.cut(muons['Muon_eta'].abs() < 2.4)
     # muons.cut(muons['Muon_pt'] > 7)
     # muons.cut(muons['Muon_IP'] > 2)
     # muons.cut(muons['Muon_ip3d'] < 0.5)
-
-
 
     ## have to calculate dR after cutting all the things, so that I don't
     ## choose the wrong fat jet
@@ -330,32 +340,16 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
                 if (lhe >= key[0]) and (lhe < key[1]):
                     weights = BGenWeights[key]
 
-
-            # if (lhe >= 200) and (lhe < 300):
-            #     weights = BGenWeights['200to300']
-            # elif (lhe >=300) and (lhe < 500):
-            #     weights = BGenWeights['300to500']
-            # elif (lhe >= 500) and (lhe < 700):
-            #     weights = BGenWeights['500to700']
-            # elif (lhe >= 700) and (lhe < 1000):
-            #     weights = BGenWeights['700to1000']
-            # elif (lhe >= 1000) and (lhe < 1500):
-            #     weights = BGenWeights['1000to1500']
-            # elif (lhe >= 1500) and (lhe <2000):
-            #     weights = BGenWeights['1500to2000']
-            # else:
-            #     weights = BGenWeights['2000toInf']
-
             maxPtData['LHE_weights'] = weights
             maxPtData['final_weights'] = weights
-            # print(fileName)
-            # key = re.search('QCD_HT(.*)_', fileName).group(1) ##find which HT range from filename
-            # maxPtData['LHE_weights'] = BGenWeights[key]
-            # for i in BGenDict:
-            #     if i in fileName:
-            #         key = i
-            #         maxPtData['LHE_weights'] = BGenDict[key]
-            # maxPtData = maxPtData.assign(final_weights = maxPtData['LHE_weights'])
+
+        elif 'bEnr' == tag:
+            lhe = maxPtData['LHE_HT'].iloc[0]
+            for key in bEnrWeights:
+                if (lhe >= key[0]) and (lhe < key[1]):
+                    weights = BGenWeights[key]
+            maxPtData['LHE_weights'] = weights
+            maxPtData['final_weights'] = weights
 
         elif 'TunCP5'==tag:
             for i in TunCP5Dict:
@@ -376,8 +370,6 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
         if tag == 'data':
             maxPtData['final_weights'] = ParkedDataDict[filePath]
 
-
-
     # make sure genpart has dr < 0.8 to the main fatjet
     if 'ggH' == tag:
         for i in range(1,5):
@@ -389,7 +381,7 @@ def processData (filePath, tag, dataSet, MC): #JetHT=False):
     #maxPtData['FatJet_nSV'] = getnSVCounts(jets, events)
     maxPtData = maxPtData.dropna(how='all')
     #maxPtData = maxPtData.fillna(0)
-
+    print(maxPtData.columns)
     return maxPtData
 
 def calcDr(phi1, eta1, phi2, eta2):
