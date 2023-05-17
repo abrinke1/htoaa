@@ -13,11 +13,11 @@ UserName=$(whoami)
 echo "UserName: ${UserName}"
 
 ## Settings: Change as per need ------------------------------------------------------------------------
-HiggsPtMin=150 # 150 250 350
+HiggsPtMin=650 # 150 250 350
 
 # set first (SampleNumber_First) to last (SampleNumber_Last) MC sample file numbers to be produced in this round of submission/execution.
 SampleNumber_First=10000
-SampleNumber_Last=10999
+SampleNumber_Last=10099
 # Pt 150:
 # Produced SampleNumber: 0 - 451
 
@@ -114,8 +114,13 @@ do
 	GENLevelEfficiency=$(bc -l <<< '0.0077' )
     elif [ ${HiggsPtMin} -eq 350 ]; then
 	GENLevelEfficiency=$(bc -l <<< '0.0030' )
+    elif [ ${HiggsPtMin} -eq 450 ]; then
+	GENLevelEfficiency=$(bc -l <<< '0.00125' )
+    elif [ ${HiggsPtMin} -eq 550 ]; then
+	GENLevelEfficiency=$(bc -l <<< '0.00060' )
+    elif [ ${HiggsPtMin} -eq 650 ]; then
+	GENLevelEfficiency=$(bc -l <<< '0.00028' )
     fi
-	
 
     NEvents_wmLHE=4000
     if [ ${iSample} -le 99999 ]; then
@@ -123,7 +128,7 @@ do
     #elif [[(${iSample} -ge 3000 && ${iSample} -le 3099)]]; then
     fi
 
-    if [ ${HiggsPtMin} -eq 350 ]; then
+    if [ ${HiggsPtMin} -ge 350 ]; then
 	if [ ${iSample} -le 99999 ]; then
 	    NEvents=40
 	fi	

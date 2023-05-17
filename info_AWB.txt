@@ -11,8 +11,9 @@ ls -lrth /tmp/ | grep "x509"
 ## Find the folder with your username next to it, and copy to your home directory
 cp /tmp/x509up_u56115 ~/
 
-## Substitute your name/initials for "AWB"
+## Substitute your name/initials for "abrinke1" and "AWB"
 git checkout -b MCGeneration_AWB
+git remote add abrinke1 git@github.com:abrinke1/cmssw.git
 ## Create a local "tmp" directory and an output directory in eos
 mkdir tmp
 mkdir /eos/cms/store/user/abrinke1/HiggsToAA/MiniAOD/2018
@@ -32,3 +33,7 @@ source MCGeneration_wrapper_AWB.sh
 condor_q
 du -sh tmp/*
 du -sh /eos/cms/store/user/abrinke1/HiggsToAA/MiniAOD/2018/*
+## Push edits to github
+git add file_names
+git commit -m "Commit message"
+git push abrinke1 MCGeneration_AWB
